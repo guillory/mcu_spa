@@ -10,17 +10,7 @@ function bxor(a,b) --used when temperature below zero
    end
    return r
 end
-function getTemp(pin)
-	local nbtry=0
-	local value=0
-	value=getTempone(pin) or 0
-	while  ((value>=80 or value<=0) and nbtry<=5)  do -- premiere mesure 85° on en fait 5maxi
-		nbtry=nbtry+1
-		tmr.delay(1000000)
-		value=getTempone(pin) or 0
-	end
-	return value
-end 
+
 
 function getTempone(pin)  
 	ow.setup(pin) 
