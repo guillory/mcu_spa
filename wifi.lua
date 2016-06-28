@@ -14,6 +14,7 @@ function ConnectWifi()
 	    	nbtry=nbtry + 1
 	        print("Connecting to ssid ", WIFI_SSID)
 	  elseif (wifi.sta.getip()== nil and nbtry>30) then 
+		WAIT_MN=1
 		print("NO WIFI wait "..WAIT_MN.." mn")
 		tmr.stop(0)
 		tmr.delay(WAIT_MN * 60000000)

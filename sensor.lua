@@ -1,74 +1,100 @@
 
 function Sensor()
+	gpio.mode(8,gpio.OUTPUT)
+	gpio.write(8,gpio.LOW)
+	gpio.mode(5,gpio.OUTPUT)
+	gpio.write(5,gpio.LOW)
 	mesures={}
+--  hx711.init(1,2) --------------------
 	values1={}
-	--  ds18b20 --------------------
+	hx711.init(1,2)
 	for i=1, 10 do 
-		table.insert(values1, decimal(getTemp(5),100) )
+		tmr.delay(500000)
+		val=((hx711.read(0) - TARREO2) / HX711RATIO )/2 -- 2 car pourcetage sur 20 kg
+		table.insert(values1,val)
 	end
-	value1=moyenne(values1, 60)
-	print (" OK temp is "..value1.. " °C")
-	table.insert(mesures, {idx=16,nvalue=0, svalue=value1} )		
+	value4=decimal(moyenne(values1, 60),10)
+	print ("O2 = "..value4.." %")
+	table.insert(mesures, {idx=3,nvalue=0, svalue=value4} )
 
-	--  DHT11 --------------------
+--  hx711.init(3, 4) --------------------
+	values1={}
+	hx711.init(3,4)
+	for i=1, 10 do 
+		tmr.delay(500000)
+		val=((hx711.read(0) - TARREACID) / HX711RATIO )/2 
+		table.insert(values1, val)
+	end
+	value5=decimal(moyenne(values1, 60),10)
+	print ("Acid = "..value5.." %")
+	table.insert(mesures, {idx=4,nvalue=0, svalue=value5} )
+	
+-- PH SENSOR --
+	values1={}
+	gpio.write(5,gpio.HIGH)
+	for i=1, 10 do 
+		tmr.delay(500000)
+		ph=(adc.read(0)-TARREPH)*1400/1024 -- 55 correctif
+	     	--print("->ph"..ph)
+	     	table.insert(values1, ph)
+	end
+	gpio.write(5,gpio.LOW)
+	value5=decimal(moyenne(values1, 60),100)
+	print("PH = "..value5)
+	table.insert(mesures, {idx=18,nvalue=0, svalue=value5} )
+--  DHT11 --------------------
 	values1={}
 	values2={}
 	for i=1, 10 do 
+		tmr.delay(500000)
 		status, temp, humi, temp_dec, humi_dec = dht.read(6)
 		if status == dht.OK then
-		     	print(string.format("DHT Temperature:%d.%03d;Humidity:%d.%03d\r\n", math.floor(temp),temp_dec,math.floor(humi),humi_dec))			
-		     	table.insert(values1, math.floor(temp))
-			table.insert(values2, math.floor(humi))
+		     	-- print(string.format("DHT Temperature:%d.%03d;Humidity:%d.%03d\r\n", math.floor(temp),temp_dec,math.floor(humi),humi_dec))
+		     	table.insert(values1, temp)
+			table.insert(values2, humi)
 		elseif status == dht.ERROR_CHECKSUM then
-			print( "  DHT Checksum error." )
+			-- print( "  DHT Checksum error." )
 		elseif status == dht.ERROR_TIMEOUT then
-			print( "  DHT timed out." )
+			-- print( "  DHT timed out." )
 		end
-		value2=moyenne(values1, 60)
-		value3=moyenne(values2, 60)
-		table.insert(mesures, {idx=2,nvalue=0, svalue=value2..";"..value3..";0"} )	
-	end		
-	--  hx711.init(1,2) --------------------
-	values1={}
-	for i=1, 10 do 
-		hx711.init(1,2)
-		table.insert(values1, decimal(((hx711.read(0) - 130000) / 654 )/2,10) )
-	end
-	value4=moyenne(values1, 60)
-	print (" OK O2 is "..value4.." %")
-	table.insert(mesures, {idx=3,nvalue=0, svalue=value4} )
-
-	--  hx711.init(3, 4) --------------------
-	values1={}
-	for i=1, 10 do 
-		hx711.init(3,4)
-		table.insert(values1, decimal(((hx711.read(0) - 33000) / 654 )/2,10) )
-	end
-	value5=moyenne(values1, 60)
-	print (" OK Acid is "..value5.." %")
-	table.insert(mesures, {idx=4,nvalue=0, svalue=value5} )
-
-	--  Sonde EAU --------------------
-		gpio.write(8,gpio.LOW)
-		gpio.write(8,gpio.HIGH)
-		value6= adc.read(0)	 or 0
-		gpio.write(8,gpio.LOW)		
-		print ("Field6")
-		print (" Niveau eau ="..value6)
-		if (value6<=4) then  LEVEL=0  elseif (value6<=50) then  LEVEL=1  elseif (value6<=100) then  LEVEL=2  elseif (value6<=200) then  LEVEL=3  else  LEVEL=4  end  
-		table.insert(mesures, {idx=15,nvalue=LEVEL, svalue=value6} )
-	
+		
+	end	
+	value2=moyenne(values1, 60)
+	print("Temp = "..value2.." °C")
+	value3=moyenne(values2, 60)
+	print("Humid = "..value3.." %")
+	table.insert(mesures, {idx=2,nvalue=0, svalue=value2..";"..value3..";0"} )		
 	--  ds18b20 --------------------
-		print ("Field7")
-		value7=decimal(getTemp(7),100) or 0
-		print (" OK temp eau is "..value7.. " °C")
-		table.insert(mesures, {idx=1,nvalue=0, svalue=value7} )
+	values1={}
+	for i=1, 10 do 
+		tmr.delay(500000)
+		value7=getTempone(7) or 0
+		table.insert(values1,value7)
+	end
+	value7=decimal(moyenne(values1, 60),100)
+	print ("Temp eau  = "..value7.. " °C")
+	table.insert(mesures, {idx=1,nvalue=0, svalue=value7} )
+	
+	--  Sonde EAU --------------------
+	values1={}
+	gpio.write(8,gpio.HIGH)
+	for i=1, 10 do 
+		tmr.delay(500000)
+		value6= adc.read(0)or 0
+		table.insert(values1,value6)
+	end
+	gpio.write(8,gpio.LOW)		
+	value6=moyenne(values1, 60)
+	print ("Niveau eau = "..value6)
+	if (value6<=4) then  LEVEL=0  elseif (value6<=50) then  LEVEL=1  elseif (value6<=100) then  LEVEL=2  elseif (value6<=200) then  LEVEL=3  else  LEVEL=4  end  
+	table.insert(mesures, {idx=15,nvalue=LEVEL, svalue=value6} )
+	
 	print("-----------")
   	
   	nbtry=0
   	TIMOUT=30 * table.getn(mesures)
   	if (table.getn(mesures)>0) then 
-		print ("postDomoticz "..table.getn(mesures).."")
+		print ("postDomoticz "..table.getn(mesures).." values")
 		-- timer de sécurité 30 secondes par mesure au cas ou perte de signal
 		nbtry=0 tmr.alarm(0, 1000,1, function() 	
 		if 	(nbtry==0) then postDomoticz(mesures)  end
